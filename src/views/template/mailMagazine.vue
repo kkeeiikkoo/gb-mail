@@ -488,7 +488,7 @@ body {
   -ms-text-size-adjust: 100%;
 }
 img {
-  borderｄ: 0 none;
+  border: 0 none;
   line-height: 0;
   outline: none;
   text-decoration: none;
