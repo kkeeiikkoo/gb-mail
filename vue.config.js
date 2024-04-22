@@ -1,4 +1,8 @@
-const { defineConfig } = require('@vue/cli-service')
+const { defineConfig } = require("@vue/cli-service");
 module.exports = defineConfig({
-  transpileDependencies: true
-})
+  transpileDependencies: true,
+  configureWebpack: {
+    mode: process.env.NODE_ENV === "production" ? "production" : "development",
+  },
+  publicPath: process.env.NODE_ENV === "production" ? "/test/gb-mail/" : "/",
+});

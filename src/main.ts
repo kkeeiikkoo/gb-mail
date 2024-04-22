@@ -2,6 +2,7 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import router from "./router";
 import store from "./store";
+import { initializeUnreadCount, changeTitle } from "./service/firebaseInit";
 
 import "./assets/global.css";
 
@@ -16,5 +17,8 @@ declare module "@vue/runtime-core" {
     $store: Store<any>;
   }
 }
+changeTitle();
 
-createApp(App).use(ElementPlus).use(store).use(router).mount("#app");
+initializeUnreadCount().then(() => {
+  createApp(App).use(ElementPlus).use(store).use(router).mount("#app");
+});

@@ -1,5 +1,5 @@
 // Import API configuration variables from api.ts
-import { apiKey, sheetId } from "./api";
+import { apiKey, sheetId, sheetIdForMailQueue } from "./api";
 
 // Function to fetch sheet data dynamically based on the last row with content
 export async function fetchSheetData(column: string, sheetName: string, row: number) {
@@ -34,7 +34,7 @@ export async function fetchSheetData(column: string, sheetName: string, row: num
 
 // Function to fetch sheet data from A1 to G7 (as an example)
 export async function fetchSheetDataForColumns(lastColumn: string, sheetName: string, startRow: number, lastRow: number) {
-  const baseUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`;
+  const baseUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetIdForMailQueue}`;
   const dataUrl = `${baseUrl}/values/${sheetName}!A${startRow}:${lastColumn}${lastRow}?key=${apiKey}`;
 
   try {

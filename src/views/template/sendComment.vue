@@ -1,9 +1,12 @@
 <template>
   <div>
-    <el-input v-model="messageContent" style="width: 250px" autosize type="textarea" placeholder="コメントはこちら" />
+    <el-input class="input" v-model="messageContent" autosize type="textarea" placeholder="コメントはこちら" />
     <div class="flex">
-      <el-button class="button" type="primary" @click="editComfirm(mailTitle, mailDate)">コメント発送</el-button>
-      <el-button class="button" type="danger" @click="deleteSpecificTitle(mailTitle)">コメント削除</el-button>
+      <div>
+        <el-button class="button" type="primary" @click="editComfirm(mailTitle, mailDate)">コメント発送</el-button>
+        <el-button class="button" type="danger" @click="deleteSpecificTitle(mailTitle)">コメント削除</el-button>
+      </div>
+      <el-button class="button" plain @click="editComfirm(mailTitle, mailDate, 'これでOK!!')">許可する</el-button>
     </div>
   </div>
 </template>
@@ -25,10 +28,14 @@ export default {
   },
   methods: {
     ...mapActions(["sendMessage", "deleteMessagesWithTitle"]),
-    editComfirm(mailTitle, mailDate) {
+    async editComfirm(mailTitle, mailDate, defaultContent = "") {
+      if (defaultContent && !this.messageContent) {
+        this.messageContent = defaultContent;
+      }
+
       if (this.messageContent.trim()) {
-        this.sendMessage({
-          messageContent: this.messageContent,
+        await this.sendMessage({
+          messageContent: this.messageContent.replace(/\n/g, "<br>"),
           additionalData: {
             title: mailTitle,
             date: mailDate,
@@ -40,9 +47,13 @@ export default {
         alert("コメントを入力してください。");
       }
     },
-    deleteSpecificTitle(mailTitle) {
-      this.$store.dispatch("deleteMessagesWithTitle", mailTitle);
-      this.$emit("dataChanged");
+    async deleteSpecificTitle(mailTitle) {
+      try {
+        await this.$store.dispatch("deleteMessagesWithTitle", mailTitle);
+        this.$emit("dataChanged"); // This will now only execute after the dispatch is complete
+      } catch (error) {
+        console.error("Error deleting message title:", error);
+      }
     },
   },
 };
@@ -51,9 +62,38 @@ export default {
 <style lang="scss" scoped>
 .button {
   margin-top: 10px;
+
+  @media screen and (max-width: 480px) {
+    padding: 8px 12px;
+  }
 }
 
 .flex {
   display: flex;
+  justify-content: space-between;
+}
+
+.input {
+  min-width: 400px;
+  box-sizing: border-box;
+
+  @media screen and (max-width: 480px) {
+    min-width: 100%;
+    border: 2px solid #1751ad;
+  }
+}
+
+::v-deep .el-textarea__inner {
+  height: 100px !important;
+
+  @media screen and (max-width: 480px) {
+    height: 150px !important;
+  }
+}
+
+.el-button + .el-button {
+  @media screen and (max-width: 480px) {
+    margin-left: 8px;
+  }
 }
 </style>

@@ -59,13 +59,13 @@
                           </tr>
                           <tr>
                             <td width="740" valign="top" height="50" align="center">
-                              <a href="https://www.nlpjapan.co.jp/business-hypno/?utm_source=mail_html_20240403&utm_campaign=business-hypno&utm_medium=main_banner" target="_blank"
+                              <a href="https://www.nlpjapan.co.jp/video/?utm_source=mail_html_20240305&utm_campaign=video&utm_medium=main_banner" target="_blank"
                                 ><img
-                                  src="https://www.businessnlp.jp/mail_magazine/img/ban_mail_business-hypno_2024_haya03.jpg"
-                                  alt="ビジネスで使える催眠言語 ～相手の深層心理に働きかける技術～"
+                                  border="0"
+                                  src="https://www.businessnlp.jp/mail_magazine/img/top_ban_mail_video.jpg"
+                                  alt="NLPオンライン動画"
                                   style="line-height: 0; display: block"
                                   width="100%"
-                                  border="0"
                               /></a>
                             </td>
                           </tr>
@@ -315,7 +315,7 @@
                                           </td>
                                         </tr>
                                         <tr>
-                                          <td height="60">
+                                          <td height="20">
                                             <p style="font-size: 0; line-height: 0">&nbsp;</p>
                                           </td>
                                         </tr>
@@ -406,6 +406,8 @@
                                   <div class="contents-box">
                                     <slot name="mail-contents"></slot>
                                   </div>
+
+                                  <br /><br />
                                 </td>
                               </tr>
                             </tbody>

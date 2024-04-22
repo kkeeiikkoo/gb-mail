@@ -1,7 +1,6 @@
 <template>
   <div class="home">
     <!-- <div v-html="content"></div> -->
-
     <h2>日程で絞り込む</h2>
     <div class="flex mb-1">
       <div>

@@ -2,6 +2,7 @@
 import { createStore } from "vuex";
 import { db } from "../service/firebase";
 import { collection, getDocs, addDoc, serverTimestamp, deleteDoc, query, where } from "firebase/firestore";
+import { incrementMessageCount } from "@/service/firebaseInit";
 
 // Define an interface for what a message looks like
 interface Message {
@@ -61,7 +62,7 @@ export default createStore({
       // Optional: Commit any mutations to Vuex state if necessary
       commit("removeDeletedMessages", targetTitle);
     },
-    async sendMessage({ commit }, { messageContent, additionalData }) {
+    async sendMessage({ commit, dispatch }, { messageContent, additionalData }) {
       try {
         const docRef = await addDoc(collection(db, "messages"), {
           text: messageContent,
@@ -74,6 +75,7 @@ export default createStore({
           ...additionalData, // Also spread it into the state for Vuex
           createdAt: new Date(), // Temporary until the server timestamp is fetched
         });
+        await incrementMessageCount(); // Increment the message count
       } catch (error) {
         console.error("Error adding message:", error);
       }

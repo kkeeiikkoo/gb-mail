@@ -1,52 +1,27 @@
 <template>
-  <div class="message-form">
-    <h2>Send Message to Firestore</h2>
-    <div>
-      <label>Message:</label>
-      <input v-model="messageContent" placeholder="Enter message" />
-    </div>
-    <div>
-      <label>Sheet Reference:</label>
-      <input v-model="additionalData.sheetReference" placeholder="Enter sheet reference" />
-    </div>
-    <div>
-      <label>Other Data:</label>
-      <input v-model="additionalData.other" placeholder="Enter other data" />
-    </div>
-    <div>
-      <label>More Data:</label>
-      <input v-model="additionalData.other2" placeholder="Enter more data" />
-    </div>
-    <button @click="send">Send to Firestore</button>
+  <div>
+    <h1>スタッフ用管理画面</h1>
+    <el-button class="button" type="primary" @click="resetCounter">メッセージを<br />既読にする</el-button>
+    <p>※ページタイトルの未読メッセージの数を０にする</p>
   </div>
 </template>
 
 <script>
-import { mapActions } from "vuex";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "../service/firebase"; // Make sure this path matches your Firebase config import
 
 export default {
-  data() {
-    return {
-      messageContent: "",
-      additionalData: {
-        sheetReference: "",
-        other: "",
-        other2: "",
-      },
-    };
-  },
+  name: "ResetCounterButton",
   methods: {
-    ...mapActions(["sendMessage"]),
-    send() {
-      if (this.messageContent.trim()) {
-        this.sendMessage({
-          messageContent: this.messageContent,
-          additionalData: this.additionalData,
+    async resetCounter() {
+      const counterRef = doc(db, "counters", "unreadCount");
+      try {
+        await updateDoc(counterRef, {
+          count: 0,
         });
-        this.messageContent = ""; // Clear the fields after sending
-        this.additionalData = { sheetReference: "", other: "", other2: "" };
-      } else {
-        alert("Please enter a message before sending.");
+        console.log("Counter reset to 0 successfully.");
+      } catch (error) {
+        console.error("Error resetting counter:", error);
       }
     },
   },
@@ -54,33 +29,10 @@ export default {
 </script>
 
 <style scoped>
-.message-form {
-  display: flex;
-  flex-direction: column;
-  max-width: 400px;
-  margin: 20px;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  margin: auto;
-}
-
-.message-form div {
-  margin-bottom: 10px;
-}
-
-.message-form label {
-  font-weight: bold;
-}
-
-.message-form input {
-  width: 100%;
-  padding: 8px;
-  margin-top: 5px;
-}
-
-.message-form button {
-  padding: 10px 20px;
-  cursor: pointer;
+.button {
+  margin: 20px 0 10px;
+  padding: 5px 25px;
+  line-height: 1.35;
+  height: unset;
 }
 </style>
