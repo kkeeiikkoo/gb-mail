@@ -3,8 +3,8 @@
     <el-input class="input" v-model="messageContent" autosize type="textarea" placeholder="コメントはこちら" />
     <div class="flex">
       <div>
-        <el-button class="button" type="primary" @click="editComfirm(mailTitle, mailDate)">コメント発送</el-button>
-        <el-button class="button" type="danger" @click="deleteSpecificTitle(mailTitle)">コメント削除</el-button>
+        <el-button class="button" type="primary" @click="editComfirm(mailTitle, mailDate)">コメント送信</el-button>
+        <el-button class="button" type="danger" @click="deleteSpecificTitle(mailTitle)">コメント全削除</el-button>
       </div>
       <el-button class="button" plain @click="editComfirm(mailTitle, mailDate, 'これでOK!!')">許可する</el-button>
     </div>
@@ -28,6 +28,8 @@ export default {
   },
   methods: {
     ...mapActions(["sendMessage", "deleteMessagesWithTitle"]),
+
+    // handle sending comment
     async editComfirm(mailTitle, mailDate, defaultContent = "") {
       if (defaultContent && !this.messageContent) {
         this.messageContent = defaultContent;
@@ -47,10 +49,12 @@ export default {
         alert("コメントを入力してください。");
       }
     },
+
+    // handle deleting all comments with the same title
     async deleteSpecificTitle(mailTitle) {
       try {
         await this.$store.dispatch("deleteMessagesWithTitle", mailTitle);
-        this.$emit("dataChanged"); // This will now only execute after the dispatch is complete
+        this.$emit("dataChanged");
       } catch (error) {
         console.error("Error deleting message title:", error);
       }
@@ -83,7 +87,7 @@ export default {
   }
 }
 
-::v-deep .el-textarea__inner {
+:deep(.el-textarea__inner) {
   height: 100px !important;
 
   @media screen and (max-width: 480px) {

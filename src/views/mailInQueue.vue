@@ -4,9 +4,9 @@
       <h1>メルマガ原稿確認</h1>
 
       <div class="show-mail-by-date">
-        <div class="show-mail-by-date__button" :class="{ 'show-mail-by-date__button--active': showMailByDate === 'all' }" @click="showMailByDate = 'all'">全て表示</div>
         <div class="show-mail-by-date__button" :class="{ 'show-mail-by-date__button--active': showMailByDate === 'soon' }" @click="showMailByDate = 'soon'">直近のみ</div>
         <div class="show-mail-by-date__button" :class="{ 'show-mail-by-date__button--active': showMailByDate === 'future' }" @click="showMailByDate = 'future'">未送信のみ</div>
+        <div class="show-mail-by-date__button" :class="{ 'show-mail-by-date__button--active': showMailByDate === 'all' }" @click="showMailByDate = 'all'">全て表示</div>
       </div>
 
       <div v-if="isLoading" class="loader"></div>
@@ -39,9 +39,12 @@
 
             <div class="flex-comment mb-2">
               <div class="mail-feedback" v-if="mail.mailFeedback">
-                <div class="mail-feedback__item mb-1" v-for="item in mail.mailFeedback" :key="item">
-                  <span class="mail-feedback--small bold">【コメント】</span><br />
-                  <span v-html="item"></span>
+                <div class="mail-feedback__item mb-1" v-for="(item, i) in mail.mailFeedback" :key="item">
+                  <div>
+                    <span class="mail-feedback--small bold">【コメント】</span><br />
+                    <span v-html="item"></span>
+                  </div>
+                  <el-button v-show="showMailFeedbackCloseButton" class="mail-feedback__close-button" @click="deleteCommentById(mail.mailFeedbackId, i)" :icon="Close" circle />
                 </div>
               </div>
               <SendComment
@@ -105,7 +108,7 @@
 import { defineComponent } from "vue";
 import { fetchSheetDataForColumns } from "@/service/sheets";
 
-import { mapState } from "vuex";
+import { mapState, mapActions } from "vuex";
 
 import MailMagazine from "@/views/template/mailMagazine.vue";
 import SendComment from "@/views/template/sendComment.vue";
@@ -119,6 +122,7 @@ interface MailRow {
   mailTarget: string;
   mailContent: string;
   mailFeedback?: string[];
+  mailFeedbackId?: string[];
 }
 
 interface Message {
@@ -156,10 +160,12 @@ export default defineComponent({
 
       isLoading: false,
 
-      showMailByDate: "all",
+      showMailByDate: "soon",
 
       // dialog
       visible: false,
+
+      showMailFeedbackCloseButton: true,
     };
   },
 
@@ -167,6 +173,7 @@ export default defineComponent({
     return {
       ChatLineSquare,
       Document,
+      Close,
     };
   },
 
@@ -194,6 +201,8 @@ export default defineComponent({
   },
 
   methods: {
+    ...mapActions(["deleteMessagesWithTitle"]),
+
     // fetch mail content
     processSheetData: function (data: string[], index: number) {
       let htmlContent = "<p>";
@@ -220,7 +229,7 @@ export default defineComponent({
       this.isLoading = true;
 
       try {
-        const mailData = await fetchSheetDataForColumns("z", "メルマガ依頼", 1, 300);
+        const mailData = await fetchSheetDataForColumns("z", "メルマガ依頼", 1);
         this.processSheetDataForMailInfo(mailData);
       } catch (error) {
         console.error("Fetching data failed:", error);
@@ -235,7 +244,7 @@ export default defineComponent({
       }, 500);
     },
 
-    // fetch mail title and date
+    // fetch mail title and content
     processSheetDataForMailInfo: function (data: string[]) {
       //depanding on sheet data structure, slice the data to get the mail title and date
       const mailTitle = data.slice(2, 3)[0];
@@ -250,9 +259,9 @@ export default defineComponent({
           const mailAlert = this.getMailAlert(mailDate[i]);
 
           let matches = this.messages.filter((message: Message) => message.title === mailTitle[i]);
-          let matchesData: string[] = [];
-          matches.forEach((item: Message) => {
-            matchesData.push(item.text);
+          let matchesData: string[][] = [];
+          matches.forEach((item: any) => {
+            matchesData.push([item.text, item.id]);
           });
 
           if (matches.length > 0) {
@@ -262,7 +271,8 @@ export default defineComponent({
               mailAlert: mailAlert,
               mailTarget: mailTarget[i],
               mailContent: this.processSheetData(mailContent, i),
-              mailFeedback: matchesData,
+              mailFeedback: matchesData.map((item) => item[0]),
+              mailFeedbackId: matchesData.map((item) => item[1]),
             });
           } else {
             tempMailData.push({
@@ -296,7 +306,7 @@ export default defineComponent({
       } else if (difference < 0) {
         return "当日配信"; // Delivered today!
       } else if (difference < 2 * oneDayInMs) {
-        return "配信３日前"; // Day before delivery
+        return "配信３日内"; // Day before delivery
       } else {
         return "まだ余裕"; // Plenty of time
       }
@@ -308,7 +318,7 @@ export default defineComponent({
           return "mail-alert__text--gray"; // Example class for finished
         case "当日配信": // Delivered today!
           return "mail-alert__text--red"; // Example class for today
-        case "配信３日前": // Day before delivery
+        case "配信３日内": // Day before delivery
           return "mail-alert__text--orange"; // Previously existing class for urgent
         case "まだ余裕": // Plenty of time
           return "mail-alert__text--green"; // Example class for relaxed
@@ -343,10 +353,23 @@ export default defineComponent({
       if (this.showMailByDate === "all") {
         return true;
       } else if (this.showMailByDate === "soon") {
-        return mail.mailAlert === "配信３日前" || mail.mailAlert === "当日配信";
+        return mail.mailAlert === "配信３日内" || mail.mailAlert === "当日配信";
       } else {
-        return mail.mailAlert === "まだ余裕" || mail.mailAlert === "配信３日前" || mail.mailAlert === "当日配信";
+        return mail.mailAlert === "まだ余裕" || mail.mailAlert === "配信３日内" || mail.mailAlert === "当日配信";
       }
+    },
+
+    async deleteCommentById(id: string[], i: number) {
+      this.isLoading = true;
+      this.showMailFeedbackCloseButton = false;
+      await this.deleteMessagesWithTitle(id[i]);
+      await this.$store.dispatch("fetchDataFromFirebase");
+
+      setTimeout(() => {
+        this.fetchSheetDataForColumnsInComponent();
+        this.isLoading = false;
+        this.showMailFeedbackCloseButton = true;
+      }, 500);
     },
   },
 });
@@ -425,7 +448,8 @@ export default defineComponent({
   background-color: #cc0000;
 }
 .mail-alert__text--orange {
-  background-color: #f56c6c;
+  // background-color: #f56c6c;
+  background-color: #f74608;
 }
 .mail-alert__text--green {
   background-color: #00a400;
@@ -467,6 +491,8 @@ export default defineComponent({
   padding: 1rem 1.5rem;
   font-size: 1rem;
   word-wrap: break-word;
+  display: flex;
+  justify-content: space-between;
 }
 
 .mail-feedback--small {
@@ -543,12 +569,12 @@ export default defineComponent({
   }
 }
 
-::v-deep .el-dialog {
+:deep(.el-dialog) {
   width: 100%;
   max-width: 1200px;
   margin: 5rem auto 0;
 }
-::v-deep .dialog-content {
+:deep(.dialog-content) {
   max-height: 75vh;
 }
 
@@ -559,7 +585,7 @@ export default defineComponent({
   height: 50px;
 }
 
-::v-deep .el-button.is-circle {
+:deep(.el-button.is-circle) {
   width: 35px;
   height: 35px;
 
@@ -570,12 +596,23 @@ export default defineComponent({
   }
 }
 
-::v-deep .el-button svg {
+:deep(.mail-feedback__close-button.is-circle) {
+  margin-right: 0;
+  width: 32px;
+  height: 32px;
+
+  @media screen and (max-width: 480px) {
+    width: 35px;
+    height: 35px;
+  }
+}
+
+:deep(.el-button svg) {
   width: unset;
   height: unset;
 }
 
-::v-deep .el-icon {
+:deep(.el-icon) {
   width: 20px;
   height: 20px;
 
@@ -585,7 +622,7 @@ export default defineComponent({
   }
 }
 
-::v-deep .mail-table__edit .el-icon {
+:deep(.mail-table__edit .el-icon) {
   @media screen and (max-width: 480px) {
     color: #fff;
   }

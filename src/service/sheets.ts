@@ -33,9 +33,9 @@ export async function fetchSheetData(column: string, sheetName: string, row: num
 }
 
 // Function to fetch sheet data from A1 to G7 (as an example)
-export async function fetchSheetDataForColumns(lastColumn: string, sheetName: string, startRow: number, lastRow: number) {
+export async function fetchSheetDataForColumns(lastColumn: string, sheetName: string, startRow: number) {
   const baseUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetIdForMailQueue}`;
-  const dataUrl = `${baseUrl}/values/${sheetName}!A${startRow}:${lastColumn}${lastRow}?key=${apiKey}`;
+  const dataUrl = `${baseUrl}/values/${sheetName}!A${startRow}:${lastColumn}?key=${apiKey}`;
 
   try {
     const response = await fetch(dataUrl);

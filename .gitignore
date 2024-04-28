@@ -1,7 +1,7 @@
 .DS_Store
 node_modules
 /dist
-
+/mail_magazine/
 
 apis.json
 

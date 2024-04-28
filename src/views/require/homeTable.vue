@@ -36,10 +36,10 @@ export default defineComponent({
       this.isLoading = true; // Start loading
 
       // Declare variables outside of the try block to ensure they're accessible later
-      let mailTitle: any[] = [],
-        mailDate: any[] = [],
-        mailTimes: any[] = [],
-        mailSeminar: any[] = [];
+      let mailTitle: string[][] = [],
+        mailDate: string[][] = [],
+        mailTimes: string[][] = [],
+        mailSeminar: string[][] = [];
 
       try {
         // Fetch the data from the Google Sheet
@@ -52,6 +52,7 @@ export default defineComponent({
         this.isLoading = false; // Consider setting isLoading to false here as well if not proceeding to filter data on error
         return; // Exit the method early if there's an error
       }
+
       // Convert your filter dates to Date objects for comparison
       //---------------------------------------------
       const startDate = new Date(this.dateFilter.start);
