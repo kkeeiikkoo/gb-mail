@@ -2,18 +2,32 @@
   <div class="container">
     <div v-if="isLoading" class="loader"></div>
 
-    <el-table :data="tableData" stripe style="width: 100%">
-      <el-table-column prop="date" label="Date" width="150" />
-      <el-table-column prop="title" label="Title" width="900" />
-      <el-table-column prop="times" label="使用回数" />
-      <el-table-column prop="seminar" label="セミナー名" />
-    </el-table>
+    <div class="custom-table">
+      <div class="table-header">
+        <div class="header-item">原稿</div>
+        <div class="header-item">配信日</div>
+        <div class="header-item">タイトル</div>
+        <div class="header-item">使用回数</div>
+        <div class="header-item">セミナー名</div>
+      </div>
+      <div class="table-body">
+        <div v-for="item in tableData" :key="item.id" class="table-row">
+          <el-button type="warning" :icon="Document" circle @click="fetchContentClick(item.url, item.title)"></el-button>
+
+          <div class="row-item">{{ item.date }}</div>
+          <div class="row-item">{{ item.title }}</div>
+          <div class="row-item">{{ item.times }}</div>
+          <div class="row-item">{{ item.seminar }}</div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
 import { fetchSheetData } from "@/service/sheets";
+import { Document } from "@element-plus/icons-vue";
 
 export default defineComponent({
   name: "homeTable",
@@ -26,8 +40,19 @@ export default defineComponent({
   data() {
     return {
       isLoading: false,
+      mailTitle: [] as string[][],
+      mailDate: [] as string[][],
+      mailTimes: [] as string[][],
+      mailSeminar: [] as string[][],
+      mailURL: [] as string[][],
 
       tableData: [],
+    };
+  },
+
+  setup() {
+    return {
+      Document,
     };
   },
 
@@ -39,20 +64,35 @@ export default defineComponent({
       let mailTitle: string[][] = [],
         mailDate: string[][] = [],
         mailTimes: string[][] = [],
-        mailSeminar: string[][] = [];
+        mailSeminar: string[][] = [],
+        mailURL: string[][] = [];
 
       try {
-        // Fetch the data from the Google Sheet
-        mailTitle = await fetchSheetData("J", "配信情報HTML", 7);
-        mailDate = await fetchSheetData("A", "配信情報HTML", 7);
-        mailTimes = await fetchSheetData("N", "配信情報HTML", 7);
-        mailSeminar = await fetchSheetData("M", "配信情報HTML", 7);
+        const promises = [
+          fetchSheetData("J", "配信情報HTML", 7),
+          fetchSheetData("A", "配信情報HTML", 7),
+          fetchSheetData("N", "配信情報HTML", 7),
+          fetchSheetData("M", "配信情報HTML", 7),
+          fetchSheetData("U", "配信情報HTML", 7),
+        ];
+        [mailTitle, mailDate, mailTimes, mailSeminar, mailURL] = await Promise.all(promises);
       } catch (error) {
         console.error("Fetching data failed:", error);
         this.isLoading = false; // Consider setting isLoading to false here as well if not proceeding to filter data on error
         return; // Exit the method early if there's an error
       }
+      this.mailTitle = mailTitle;
+      this.mailDate = mailDate;
+      this.mailTimes = mailTimes;
+      this.mailSeminar = mailSeminar;
+      this.mailURL = mailURL;
 
+      this.isLoading = false;
+
+      this.processData();
+    },
+
+    processData() {
       // Convert your filter dates to Date objects for comparison
       //---------------------------------------------
       const startDate = new Date(this.dateFilter.start);
@@ -62,7 +102,7 @@ export default defineComponent({
       //---------------------------------------------
 
       // Filter the data based on the date range and mail title
-      let tableData = mailDate.reduce((acc: any, dateArr: string[], index: number) => {
+      let tableData = this.mailDate.reduce((acc: any, dateArr: string[], index: number) => {
         // Ensure dateArr is treated as an array and take the first element(only element) as the date string
         // For ['2023/5/14'], dateArr[0] gives you '2023/5/14'.
         const dateStr = Array.isArray(dateArr) ? dateArr[0] : dateArr;
@@ -72,12 +112,19 @@ export default defineComponent({
           const date = new Date(dateStr.replace(/\//g, "-"));
 
           // Check if the date is within the filter range and if the mailTitle is not empty
-          if (date >= startDate && date <= endDate && mailTitle[index] && mailTitle[index].length > 0 && (seminarName === "すべて" || mailSeminar[index][0] === seminarName)) {
+          if (
+            date >= startDate &&
+            date <= endDate &&
+            this.mailTitle[index] &&
+            this.mailTitle[index].length > 0 &&
+            (seminarName === "すべて" || (this.mailSeminar[index] && this.mailSeminar[index][0] && this.mailSeminar[index][0].includes(seminarName)))
+          ) {
             acc.push({
-              title: Array.isArray(mailTitle[index]) ? mailTitle[index][0] : mailTitle[index],
+              title: Array.isArray(this.mailTitle[index]) ? this.mailTitle[index][0] : this.mailTitle[index],
               date: dateStr,
-              times: Array.isArray(mailTimes[index]) ? mailTimes[index][0] : mailTimes[index],
-              seminar: Array.isArray(mailSeminar[index]) ? mailSeminar[index][0] : mailSeminar[index],
+              times: Array.isArray(this.mailTimes[index]) ? this.mailTimes[index][0] : this.mailTimes[index],
+              seminar: Array.isArray(this.mailSeminar[index]) ? this.mailSeminar[index][0] : this.mailSeminar[index],
+              url: Array.isArray(this.mailURL[index]) ? this.mailURL[index][0] : this.mailURL[index],
             });
           }
         }
@@ -86,9 +133,11 @@ export default defineComponent({
         return acc;
       }, []);
 
-      this.tableData = tableData;
+      this.tableData = tableData.reverse();
+    },
 
-      this.isLoading = false;
+    fetchContentClick(url: string, title: string) {
+      this.$emit("fetchContentClick", url, title);
     },
   },
   mounted() {
@@ -119,5 +168,48 @@ export default defineComponent({
   100% {
     transform: rotate(360deg);
   }
+}
+
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.header-item,
+.row-item {
+  padding: 8px;
+  flex-grow: 1;
+  overflow: hidden; /* Prevent content from overflowing */
+}
+
+.table-header,
+.table-row {
+  display: grid;
+  grid-template-columns: 0.5fr 1fr 5fr 1fr 1fr;
+  align-items: center;
+  text-align: left;
+}
+.table-row {
+  border-bottom: 1px dashed #d4dae9;
+  min-height: 60px;
+}
+
+.table-header {
+  font-weight: bold;
+  background-color: #385f9d;
+  color: white;
+}
+
+.table-body .table-row:nth-child(odd) {
+  background-color: #fff;
+}
+
+.table-body .table-row:nth-child(even) {
+  background-color: #f8faff;
+}
+
+.row-item {
+  text-overflow: ellipsis;
+  white-space: nowrap; /* Keep the content on the same line */
 }
 </style>

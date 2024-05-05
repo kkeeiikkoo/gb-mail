@@ -4,7 +4,7 @@
     <div class="flex">
       <div>
         <el-button class="button" type="primary" @click="editComfirm(mailTitle, mailDate)">コメント送信</el-button>
-        <el-button class="button" type="danger" @click="deleteSpecificTitle(mailTitle)">コメント全削除</el-button>
+        <!-- <el-button class="button" type="danger" @click="deleteSpecificTitle(mailTitle)">コメント全削除</el-button> -->
       </div>
       <el-button class="button" plain @click="editComfirm(mailTitle, mailDate, 'これでOK!!')">許可する</el-button>
     </div>

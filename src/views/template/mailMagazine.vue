@@ -508,6 +508,7 @@ p {
   color: #222;
   line-height: 1.47;
 }
+
 .beginning-box {
   margin: 0 20px;
 }

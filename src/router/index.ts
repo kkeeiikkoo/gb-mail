@@ -4,18 +4,19 @@ const routes: Array<RouteRecordRaw> = [
   // {
   //   path: "/",
   //   name: "home",
-  //   component: () => import("../views/HomeView.vue"),
+  //   component: () => import("../views/mailInQueue.vue"),
   // },
   {
     path: "/",
     name: "home",
+    component: () => import("../views/HomeView.vue"),
+  },
+
+  {
+    path: "/mailInQueue",
+    name: "mailInQueue",
     component: () => import("../views/mailInQueue.vue"),
   },
-  // {
-  //   path: "/mailInQueue",
-  //   name: "mailInQueue",
-  //   component: () => import("../views/mailInQueue.vue"),
-  // },
   {
     path: "/settingView",
     name: "settingView",

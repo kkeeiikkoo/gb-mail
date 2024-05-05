@@ -1,8 +1,7 @@
 <template>
   <nav>
-    <router-link to="/">メルマガ依頼</router-link> |
-    <!-- <router-link to="/mailInQueue">メルマガ依頼</router-link> | -->
-    <router-link to="/settingView">設定画面</router-link>
+    <router-link to="/">メルマガ一覧</router-link> | <router-link to="/mailInQueue">メルマガ依頼</router-link> |
+    <router-link to="/settingView">スタッフ用画面</router-link>
   </nav>
   <router-view />
 </template>

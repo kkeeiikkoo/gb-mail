@@ -1,6 +1,5 @@
 <template>
   <div class="home">
-    <!-- <div v-html="content"></div> -->
     <h2>日程で絞り込む</h2>
     <div class="flex mb-1">
       <div>
@@ -24,9 +23,29 @@
 
     <div v-if="ifDateError" class="error-message">日程の入力は間違っています</div>
 
-    <homeTable ref="childComponentRef" :dateFilter="dateFilter"></homeTable>
+    <el-dialog v-model="visible" :show-close="false">
+      <template #header="{ close, titleId, titleClass }">
+        <div class="my-header">
+          <h4 :id="titleId" :class="titleClass">メルマガ原稿</h4>
+          <el-button type="danger" @click="close">
+            <el-icon><Close /></el-icon> クローズ
+          </el-button>
+        </div>
+      </template>
+      <div class="dialog-content" style="overflow-y: auto">
+        <div>
+          <div class="mail-content-area">
+            <div class="simple-mail-content">
+              <h2 class="mb-2" v-html="showSimpleMailContentTitle"></h2>
 
-    <!-- <el-button type="primary" @click="fetchContentClick">Primary</el-button> -->
+              <div v-html="showSimpleMailContent"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
+
+    <homeTable ref="childComponentRef" :dateFilter="dateFilter" @fetchContentClick="fetchContentClick"></homeTable>
   </div>
 </template>
 
@@ -35,25 +54,28 @@ import { defineComponent } from "vue";
 
 import homeTable from "/src/views/require/homeTable.vue";
 
-import { Calendar, Search } from "@element-plus/icons-vue";
+import { Calendar, Search, Document, Close } from "@element-plus/icons-vue";
 
-// import { fetchContent } from "@/service/axios";
+import { fetchContent } from "@/service/axios";
 
 export default defineComponent({
   name: "HomeView",
   components: {
     homeTable,
+    Close,
   },
   data() {
     return {
-      dateFilter: { start: "2024-01-01", end: "2024-04-01", seminarName: "すべて" },
+      dateFilter: { start: "2019-01-01", end: "2024-04-01", seminarName: "すべて" },
       ifDateError: false,
 
-      categoryButtonType: ["すべて", "役立ち", "体験講座", "話し方プレゼン"],
+      categoryButtonType: ["すべて", "役立ち", "体験講座", "コーチング"],
       categoryButtonSelected: "すべて",
       activeCategoryButtonIndex: 0,
 
-      content: "",
+      showSimpleMailContentTitle: "",
+      showSimpleMailContent: "",
+      visible: false,
     };
   },
 
@@ -61,6 +83,8 @@ export default defineComponent({
     return {
       Calendar,
       Search,
+      Document,
+      Close,
     };
   },
   computed: {
@@ -117,7 +141,7 @@ export default defineComponent({
       this.ifDateError = false;
       this.dateFilter.start = this.transformDateToYYYYMMDD(this.start) as string;
       this.dateFilter.end = this.transformDateToYYYYMMDD(this.end) as string;
-      (this.$refs.childComponentRef as any).fetchAndProcessData();
+      (this.$refs.childComponentRef as any).processData();
     },
 
     confirmSeminarName(index: number) {
@@ -125,19 +149,25 @@ export default defineComponent({
       this.categoryButtonSelected = this.categoryButtonType[index];
       this.dateFilter.seminarName = this.categoryButtonSelected;
 
-      (this.$refs.childComponentRef as any).fetchAndProcessData();
+      (this.$refs.childComponentRef as any).processData();
+    },
+
+    fetchContentClick(url: string, title: string) {
+      fetchContent(url, (html) => {
+        if (html) {
+          this.showSimpleMailContent = html;
+          this.showSimpleMailContentTitle = title;
+          this.visible = true;
+        } else {
+          window.open(url, "_blank"); // Opens the URL in a new tab if no content is found
+        }
+      });
     },
   },
-
-  // methods: {
-  //   fetchContentClick() {
-  //     fetchContent("../html/nlp_mm_html_p1_20240325.html", (html) => (this.content = html));
-  //   },
-  // },
 });
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .flex {
   display: flex;
   justify-content: center;
@@ -154,5 +184,81 @@ export default defineComponent({
 .active {
   background-color: #8fcbb0 !important;
   color: white !important;
+}
+
+.my-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 50px;
+}
+
+:deep(.el-dialog) {
+  width: 100%;
+  max-width: 1200px;
+  margin: 5rem auto 0;
+
+  @media screen and (max-width: 480px) {
+    width: 96%;
+    margin: 2rem auto 0;
+  }
+}
+:deep(.dialog-content) {
+  max-height: 75vh;
+
+  @media screen and (max-width: 480px) {
+    max-height: 80vh;
+  }
+}
+
+.mail-content-area {
+  background-color: #f6fafd;
+  padding: 3rem;
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+
+  @media screen and (max-width: 480px) {
+    padding: 1rem;
+  }
+}
+
+.simple-mail-content {
+  margin: 0 auto;
+  text-align: left;
+  padding: 2rem 3rem;
+  background-color: #fff;
+  box-sizing: border-box;
+
+  @media screen and (max-width: 480px) {
+    padding: 1rem;
+  }
+}
+
+:deep(.el-button.is-circle) {
+  width: 35px;
+  height: 35px;
+
+  @media screen and (max-width: 480px) {
+    width: 25px;
+    height: 25px;
+    margin-right: 0.8rem;
+  }
+}
+
+:deep(.el-button svg) {
+  width: unset;
+  height: unset;
+}
+
+:deep(.el-icon) {
+  width: 20px;
+  height: 20px;
+
+  @media screen and (max-width: 480px) {
+    width: 25px;
+    height: 25px;
+  }
 }
 </style>

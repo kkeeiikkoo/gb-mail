@@ -5,8 +5,8 @@
 
       <div class="show-mail-by-date">
         <div class="show-mail-by-date__button" :class="{ 'show-mail-by-date__button--active': showMailByDate === 'soon' }" @click="showMailByDate = 'soon'">直近のみ</div>
-        <div class="show-mail-by-date__button" :class="{ 'show-mail-by-date__button--active': showMailByDate === 'future' }" @click="showMailByDate = 'future'">未送信のみ</div>
-        <div class="show-mail-by-date__button" :class="{ 'show-mail-by-date__button--active': showMailByDate === 'all' }" @click="showMailByDate = 'all'">全て表示</div>
+        <div class="show-mail-by-date__button" :class="{ 'show-mail-by-date__button--active': showMailByDate === 'future' }" @click="showMailByDate = 'future'">全て表示</div>
+        <!-- <div class="show-mail-by-date__button" :class="{ 'show-mail-by-date__button--active': showMailByDate === 'all' }" @click="showMailByDate = 'all'">全て表示</div> -->
       </div>
 
       <div v-if="isLoading" class="loader"></div>
@@ -48,6 +48,7 @@
                 </div>
               </div>
               <SendComment
+                v-model="visible"
                 class="send-comment"
                 @dataChanged="fetchData"
                 v-if="index === mailIndex && isEditing"
@@ -61,46 +62,14 @@
         </div>
       </div>
     </div>
-
-    <el-dialog v-model="visible" :show-close="false">
-      <template #header="{ close }">
-        <div class="my-header">
-          <div class="flex">
-            <h4>
-              文面： <el-button @click="showSimpleMailContent = !showSimpleMailContent">モード：{{ showSimpleMailContentButtonText }}</el-button>
-            </h4>
-          </div>
-          <el-button type="danger" @click="close">
-            <el-icon><Close /></el-icon> クローズ
-          </el-button>
-        </div>
-      </template>
-
-      <div class="dialog-content" style="overflow-y: auto">
-        <div>
-          <div class="mail-content-area">
-            <div v-if="showSimpleMailContent" class="simple-mail-content">
-              <div v-if="isLoading" class="loader"></div>
-
-              <h2 v-if="showSimpleMailTitle" class="mb-3" v-html="formatMultiline(showSimpleMailTitle)"></h2>
-              <div v-html="mailData[mailIndex].mailContent"></div>
-            </div>
-            <MailMagazine v-if="!showSimpleMailContent">
-              <template v-slot:mail-contents>
-                <div v-html="mailData[mailIndex].mailContent"></div>
-              </template>
-            </MailMagazine>
-          </div>
-        </div>
-      </div>
-
-      <!-- <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="visible = false">Cancel</el-button>
-          <el-button type="primary" @click="visible = false">戻る</el-button>
-        </span>
-      </template> -->
-    </el-dialog>
+    <MailModal
+      v-model="visible"
+      :isLoading="isLoading"
+      :showSimpleMailContent="showSimpleMailContent"
+      :showSimpleMailTitle="showSimpleMailTitle"
+      :mailData="mailData"
+      :mailIndex="mailIndex"
+    />
   </div>
 </template>
 
@@ -110,7 +79,7 @@ import { fetchSheetDataForColumns } from "@/service/sheets";
 
 import { mapState, mapActions } from "vuex";
 
-import MailMagazine from "@/views/template/mailMagazine.vue";
+import MailModal from "@/views/template/mailModal.vue";
 import SendComment from "@/views/template/sendComment.vue";
 
 import { Close, ChatLineSquare, Document } from "@element-plus/icons-vue";
@@ -136,15 +105,13 @@ interface Message {
 export default defineComponent({
   name: "AboutView",
   components: {
-    MailMagazine,
+    MailModal,
     SendComment,
-    Close,
   },
 
   data() {
     return {
       showSimpleMailContent: true,
-      showSimpleMailContentText: "簡易表示",
       showSimpleMailTitle: "",
 
       textarea: "",
@@ -194,10 +161,6 @@ export default defineComponent({
   computed: {
     ...mapState(["messages"]),
     // computed property to show the text of the button
-
-    showSimpleMailContentButtonText(): string {
-      return this.showSimpleMailContent ? "簡易表示" : "詳細表示";
-    },
   },
 
   methods: {
@@ -297,16 +260,28 @@ export default defineComponent({
 
     getMailAlert(mailDate: string) {
       const currentTime = new Date().getTime();
-      const mailTime = new Date(mailDate).getTime();
+      let mailDateTime = new Date(mailDate);
+      const dayOfWeek = mailDateTime.getDay();
+
+      // Adjust mail time if the delivery day is on the weekend
+      if (dayOfWeek === 0) {
+        // Sunday
+        mailDateTime = new Date(mailDateTime.getTime() - 2 * 86400000); // Shift to Friday
+      } else if (dayOfWeek === 6) {
+        // Saturday
+        mailDateTime = new Date(mailDateTime.getTime() - 86400000); // Shift to Friday
+      }
+
+      const mailTime = mailDateTime.getTime();
       const difference = mailTime - currentTime;
       const oneDayInMs = 86400000;
 
       if (difference < -oneDayInMs) {
         return "配信終了"; // Delivery finished
       } else if (difference < 0) {
-        return "当日配信"; // Delivered today!
+        return "当日設定"; // Delivered today!
       } else if (difference < 2 * oneDayInMs) {
-        return "配信３日内"; // Day before delivery
+        return "３日内設定"; // Day before delivery
       } else {
         return "まだ余裕"; // Plenty of time
       }
@@ -316,9 +291,9 @@ export default defineComponent({
       switch (alert) {
         case "配信終了": // Delivery finished
           return "mail-alert__text--gray"; // Example class for finished
-        case "当日配信": // Delivered today!
+        case "当日設定": // Delivered today!
           return "mail-alert__text--red"; // Example class for today
-        case "配信３日内": // Day before delivery
+        case "３日内設定": // Day before delivery
           return "mail-alert__text--orange"; // Previously existing class for urgent
         case "まだ余裕": // Plenty of time
           return "mail-alert__text--green"; // Example class for relaxed
@@ -353,9 +328,9 @@ export default defineComponent({
       if (this.showMailByDate === "all") {
         return true;
       } else if (this.showMailByDate === "soon") {
-        return mail.mailAlert === "配信３日内" || mail.mailAlert === "当日配信";
+        return mail.mailAlert === "３日内設定" || mail.mailAlert === "当日設定";
       } else {
-        return mail.mailAlert === "まだ余裕" || mail.mailAlert === "配信３日内" || mail.mailAlert === "当日配信";
+        return mail.mailAlert === "まだ余裕" || mail.mailAlert === "３日内設定" || mail.mailAlert === "当日設定";
       }
     },
 
@@ -376,6 +351,24 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
+:deep(.el-dialog) {
+  width: 100%;
+  max-width: 1200px;
+  margin: 5rem auto 0;
+
+  @media screen and (max-width: 480px) {
+    width: 96%;
+    margin: 2rem auto 0;
+  }
+}
+:deep(.dialog-content) {
+  max-height: 75vh;
+
+  @media screen and (max-width: 480px) {
+    max-height: 80vh;
+  }
+}
+
 .about {
   max-width: 1200px;
   gap: 2rem;
@@ -490,7 +483,7 @@ export default defineComponent({
   background: #fff;
   padding: 1rem 1.5rem;
   font-size: 1rem;
-  word-wrap: break-word;
+  word-break: break-all;
   display: flex;
   justify-content: space-between;
 }
@@ -499,38 +492,13 @@ export default defineComponent({
   font-size: 0.85rem;
 }
 
-.mail-content-area {
-  background-color: #f6fafd;
-  padding: 3rem;
-  max-width: 960px;
-  width: 100%;
-  margin: 0 auto;
-  box-sizing: border-box;
-
-  @media screen and (max-width: 480px) {
-    padding: 1rem;
-  }
-}
-
-.simple-mail-content {
-  margin: 0 auto;
-  text-align: left;
-  padding: 2rem 3rem;
-  background-color: #fff;
-  box-sizing: border-box;
-
-  @media screen and (max-width: 480px) {
-    padding: 1rem;
-  }
-}
-
 .show-mail-by-date {
   display: flex;
   justify-content: space-around;
-  max-width: 350px;
+  max-width: 240px;
   margin: 1rem auto 2rem;
   @media screen and (max-width: 480px) {
-    max-width: 320px;
+    max-width: 200px;
   }
 }
 
@@ -568,23 +536,6 @@ export default defineComponent({
     transform: rotate(360deg);
   }
 }
-
-:deep(.el-dialog) {
-  width: 100%;
-  max-width: 1200px;
-  margin: 5rem auto 0;
-}
-:deep(.dialog-content) {
-  max-height: 75vh;
-}
-
-.my-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 50px;
-}
-
 :deep(.el-button.is-circle) {
   width: 35px;
   height: 35px;
